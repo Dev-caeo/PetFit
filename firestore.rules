@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Pet Validation
+    function isValidPet(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.species in ['dog', 'cat'] &&
+             data.ownerId == request.auth.uid;
+    }
+
+    match /pets/{petId} {
+      allow get: if isSignedIn() && isOwner(existing().ownerId);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                    isValidId(petId) && 
+                    isValidPet(incoming());
+      
+      allow update: if isSignedIn() && 
+                    isOwner(existing().ownerId) && 
+                    isValidPet(incoming()) &&
+                    incoming().ownerId == existing().ownerId; // Immutable owner
+
+      allow delete: if isSignedIn() && isOwner(existing().ownerId);
+    }
+
+    // Log Validation
+    function isValidLog(data) {
+      return data.petId is string &&
+             data.ownerId == request.auth.uid &&
+             data.type in ['intake', 'expenditure'] &&
+             data.amount is number && data.amount >= 0;
+    }
+
+    match /logs/{logId} {
+      allow get: if isSignedIn() && isOwner(existing().ownerId);
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                    isValidId(logId) && 
+                    isValidLog(incoming()) &&
+                    get(/databases/$(database)/documents/pets/$(incoming().petId)).data.ownerId == request.auth.uid;
+      
+      allow update: if isSignedIn() && 
+                    isOwner(existing().ownerId) && 
+                    isValidLog(incoming()) &&
+                    incoming().ownerId == existing().ownerId &&
+                    incoming().petId == existing().petId;
+
+      allow delete: if isSignedIn() && isOwner(existing().ownerId);
+    }
+  }
+}

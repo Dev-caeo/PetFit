@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "Pet": {
+      "title": "Pet",
+      "description": "A pet profile managed by a user.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "species": { "type": "string", "enum": ["dog", "cat"] },
+        "breed": { "type": "string" },
+        "age": { "type": "number" },
+        "weight": { "type": "number" },
+        "targetWeight": { "type": "number" },
+        "dailyCalorieTarget": { "type": "number" },
+        "photoUrl": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "species", "ownerId"]
+    },
+    "CalorieLog": {
+      "title": "Calorie Log",
+      "description": "An calorie intake or expenditure record for a pet.",
+      "type": "object",
+      "properties": {
+        "petId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "type": { "type": "string", "enum": ["intake", "expenditure"] },
+        "amount": { "type": "number" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["petId", "ownerId", "date", "type", "amount"]
+    }
+  },
+  "firestore": {
+    "pets/{petId}": {
+      "schema": "Pet",
+      "description": "User's pets."
+    },
+    "logs/{logId}": {
+      "schema": "CalorieLog",
+      "description": "Activity and calorie logs."
+    }
+  }
+}
