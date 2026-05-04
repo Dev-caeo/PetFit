@@ -10,3 +10,4 @@ coverage/
 .env.local
 node_modules/
 dist/
+firebase-applet-config.json
